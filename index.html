@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Dashboard de Estudiantes</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>function applyDarkMode(isDark) { if (isDark) { document.documentElement.classList.add('dark'); document.documentElement.setAttribute('data-mode', 'dark'); localStorage.theme = 'dark'; } else { document.documentElement.classList.remove('dark'); document.documentElement.setAttribute('data-mode', 'light'); localStorage.theme = 'light'; } updateThemeColors(); } function initTheme() { const isDark = localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches); applyDarkMode(isDark); updateDarkModeButton(isDark); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => { if (!('theme' in localStorage)) { const isSystemDark = e.matches; applyDarkMode(isSystemDark); updateDarkModeButton(isSystemDark); } }); } function updateDarkModeButton(isDark) { const darkModeToggle = document.getElementById('darkModeToggle'); if (darkModeToggle) { darkModeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; darkModeToggle.setAttribute('aria-label', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'); } } function toggleDarkMode() { const isDark = localStorage.theme !== 'dark'; applyDarkMode(isDark); updateDarkModeButton(isDark); } function updateThemeColors() { if (window.updateChartThemes) { window.updateChartThemes(); } } document.addEventListener('DOMContentLoaded', initTheme);</script>
+    <style>
+        :root {
+            --primary: #465fff;
+            --primary-dark: #3641f5;
+            --gray-100: #f9fafb;
+            --gray-200: #f2f4f7;
+            --gray-300: #e4e7ec;
+            --gray-400: #98a2b3;
+            --gray-500: #667085;
+            --gray-600: #475467;
+            --gray-700: #344054;
+            --gray-800: #1d2939;
+            --gray-900: #101828
+        }
+
+        body {
+            background-color: #f9fafb;
+            color: var(--gray-800);
+            font-family: 'Inter', sans-serif
+        }
+
+        .card {
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--gray-200);
+            border-radius: .75rem;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .05)
+        }
+
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 1rem 1.5rem;
+            border-top-left-radius: .75rem !important;
+            border-top-right-radius: .75rem !important
+        }
+
+        .card-header h5 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-800)
+        }
+
+        .card-body {
+            padding: 1.5rem
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0
+        }
+
+        .table thead th {
+            background-color: var(--gray-50);
+            color: var(--gray-500);
+            font-size: .75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            padding: .75rem 1.5rem;
+            border: none;
+            white-space: nowrap
+        }
+
+        .table tbody td {
+            padding: 1rem 1.5rem;
+            vertical-align: middle;
+            border-top: 1px solid var(--gray-100);
+            color: var(--gray-700);
+            font-size: .875rem
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--gray-50)
+        }
+
+        .badge {
+            font-size: .75rem;
+            font-weight: 500;
+            padding: .35em .65em;
+            border-radius: .25rem
+        }
+
+        .badge-success {
+            background-color: #ecfdf3;
+            color: #027a48
+        }
+
+        .badge-danger {
+            background-color: #fef3f2;
+            color: #b42318
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-500);
+            display: none
+        }
+
+        .filter-section {
+            margin-bottom: 1.5rem
+        }
+
+        .form-label {
+            font-size: .875rem;
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: .5rem
+        }
+
+        .form-select,
+        .form-control {
+            border: 1px solid var(--gray-300);
+            border-radius: .5rem;
+            padding: .5rem 1rem;
+            font-size: .875rem;
+            color: var(--gray-700);
+            height: auto
+        }
+
+        .btn {
+            border-radius: .5rem;
+            padding: .5rem 1rem;
+            font-size: .875rem;
+            font-weight: 500;
+            transition: all .2s
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary)
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark)
+        }
+
+        .btn-secondary {
+            background-color: white;
+            border: 1px solid var(--gray-300);
+            color: var(--gray-700)
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--gray-100);
+            border-color: var(--gray-400)
+        }
+
+        .accordion-button {
+            font-weight: 500;
+            color: var(--gray-800);
+            padding: 1rem 1.5rem
+        }
+
+        .accordion-button:not(.collapsed) {
+            background-color: white;
+            color: var(--primary);
+            box-shadow: none
+        }
+
+        .accordion-button:focus {
+            box-shadow: none;
+            border-color: var(--primary)
+        }
+
+        .accordion-button::after {
+            background-size: 1.25rem
+        }
+
+        .accordion-item {
+            border: 1px solid var(--gray-200);
+            border-radius: .5rem;
+            margin-bottom: 1rem;
+            overflow: hidden
+        }
+
+        .accordion-body {
+            padding: 0
+        }
+
+        :root {
+            --color-bg: #fff;
+            --color-text: #1f2937;
+            --color-primary: #3b82f6;
+            --color-secondary: #6b7280;
+            --color-border: #e5e7eb;
+            --color-card: #fff;
+            --color-card-header: #f9fafb;
+            --color-input-bg: #fff;
+            --color-input-border: #d1d5db;
+            --color-input-text: #1f2937;
+            --color-hover: #f3f4f6;
+            --color-accent: #f3f4f6;
+            --color-muted: #6b7280
+        }
+
+        .dark {
+            --color-bg: #0f172a;
+            --color-text: #e2e8f0;
+            --color-primary: #60a5fa;
+            --color-secondary: #9ca3af;
+            --color-border: #334155;
+            --color-card: #1e293b;
+            --color-card-header: #1e293b;
+            --color-input-bg: #1e293b;
+            --color-input-border: #475569;
+            --color-input-text: #e2e8f0;
+            --color-hover: #1e293b;
+            --color-accent: #334155;
+            --color-muted: #94a3b8
+        }
+
+        body {
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            transition: background-color .3s, color .3s
+        }
+
+        .card {
+            background-color: var(--color-card);
+            border-color: var(--color-border);
+            color: var(--color-text);
+            transition: transform .2s, box-shadow .2s;
+            border-radius: .5rem;
+            overflow: hidden
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .1) !important
+        }
+
+        .bg-soft-primary {
+            background-color: rgba(70, 95, 255, .1) !important
+        }
+
+        .bg-soft-success {
+            background-color: rgba(40, 199, 111, .1) !important
+        }
+
+        .bg-soft-danger {
+            background-color: rgba(234, 84, 85, .1) !important
+        }
+
+        .bg-soft-info {
+            background-color: rgba(45, 206, 235, .1) !important
+        }
+
+        .bg-soft-warning {
+            background-color: rgba(255, 171, 0, .1) !important
+        }
+
+        .card h6 {
+            font-size: .8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: .25rem
+        }
+
+        .card h3,
+        .card h4 {
+            font-weight: 600;
+            margin-bottom: .25rem
+        }
+
+        .card small {
+            font-size: .75rem;
+            opacity: .8
+        }
+
+        .card-header {
+            background-color: var(--color-card-header);
+            border-bottom-color: var(--color-border);
+            color: var(--color-text)
+        }
+
+        .table {
+            color: var(--color-text)
+        }
+
+        .table thead th {
+            background-color: var(--color-card-header);
+            color: var(--color-muted);
+            border-color: var(--color-border)
+        }
+
+        .table tbody td {
+            border-color: var(--color-border);
+            color: var(--color-text)
+        }
+
+        .table tbody tr:hover {
+            background-color: var(--color-hover)
+        }
+
+        .form-control,
+        .form-select,
+        .form-check-input {
+            background-color: var(--color-input-bg);
+            border-color: var(--color-input-border);
+            color: var(--color-input-text)
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: var(--color-input-bg);
+            border-color: var(--color-primary);
+            color: var(--color-input-text);
+            box-shadow: 0 0 0 .25rem rgba(59, 130, 246, .25)
+        }
+
+        .accordion-button {
+            background-color: var(--color-card);
+            color: var(--color-text)
+        }
+
+        .accordion-button:not(.collapsed) {
+            background-color: var(--color-card);
+            color: var(--color-primary)
+        }
+
+        .accordion-item {
+            background-color: var(--color-card);
+            border-color: var(--color-border)
+        }
+
+        .btn-outline-secondary {
+            color: var(--color-text);
+            border-color: var(--color-border)
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: var(--color-hover);
+            border-color: var(--color-border)
+        }
+
+        .text-muted {
+            color: var(--color-muted) !important
+        }
+
+        .bg-light {
+            background-color: var(--color-card-header) !important
+        }
+
+        .chart-container {
+            background-color: var(--color-card);
+            border-radius: .5rem;
+            padding: 1rem
+        }
+
+        .semaforo-calificacion {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem
+        }
+
+        .punto-semaforo {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px
+        }
+
+        .semaforo-rojo {
+            background-color: #dc3545
+        }
+
+        .semaforo-amarillo {
+            background-color: #ffc107
+        }
+
+        .semaforo-verde {
+            background-color: #28a745
+        }
+
+        .texto-semaforo {
+            font-weight: 500
+        }
+
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .05)
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--bs-gray-800)
+        }
+
+        .navbar .form-select {
+            min-width: 180px;
+            background-color: var(--bs-white);
+            border-color: var(--bs-gray-300)
+        }
+
+        .navbar .dropdown-menu {
+            min-width: 200px
+        }
+
+        .navbar .nav-item {
+            margin-right: .5rem
+        }
+
+        @media (max-width:991.98px) {
+            .navbar-collapse {
+                padding: 1rem 0
+            }
+
+            .navbar .form-select {
+                margin-bottom: .5rem;
+                width: 100%
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--color-bg)
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 4px
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-muted)
+        }
+
+        div.dataTables_wrapper div.dataTables_filter {
+            text-align: left
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+        <div class="container"><a class="navbar-brand" href="#">Dashboard de Estudiantes</a><button
+                class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarFilters"
+                aria-controls="navbarFilters" aria-expanded="false" aria-label="Toggle navigation"><span
+                    class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarFilters">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item dropdown me-2"><select id="grupoFilter" class="form-select form-select-sm">
+                            <option value="">Todos los grupos</option>
+                        </select></li>
+                    <li class="nav-item dropdown me-2"><select id="equipoFilter" class="form-select form-select-sm">
+                            <option value="">Todos los equipos</option>
+                        </select></li>
+                    <li class="nav-item dropdown me-2"><select id="estadoFilter" class="form-select form-select-sm">
+                            <option value="">Todos los estados</option>
+                            <option value="Aprobado">Aprobado</option>
+                            <option value="Reprobado">Reprobado</option>
+                        </select></li>
+                    <li class="nav-item"><button id="resetFilters" class="btn btn-outline-secondary btn-sm"><i
+                                class="fas fa-undo-alt me-1"></i> Limpiar</button></li>
+                </ul>
+                <div class="d-flex"><button id="darkModeToggle" onclick="toggleDarkMode()"
+                        class="btn btn-outline-secondary" aria-label="Alternar modo oscuro/claro"><i
+                            class="fas fa-moon"></i></button></div>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <h4 class="mb-3">Resumen General</h4>
+        <div class="row mb-4">
+            <div class="col-6 col-md-4 col-lg-2 mb-3">
+                <div class="card border-0 shadow-sm h-100 align-middle">
+                    <div class="card-body text-center">
+                        <div class="d-flex flex-column justify-content-between h-100">
+                            <div class="mb-2"><i class="fas fa-users fa-2x text-primary mb-2"></i>
+                                <h6 class="text-muted mb-1">Total Estudiantes</h6>
+                                <h3 class="mb-0" id="totalEstudiantes">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex flex-column justify-content-between h-100">
+                            <div class="mb-2"><i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                <h6 class="text-muted mb-1">Aprobados</h6>
+                                <h3 class="mb-0 text-success" id="totalAprobados">0</h3><small class="text-muted"
+                                    id="porcentajeAprobados">0%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex flex-column justify-content-between h-100">
+                            <div class="mb-2"><i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                                <h6 class="text-muted mb-1">Reprobados</h6>
+                                <h3 class="mb-0 text-danger" id="totalReprobados">0</h3><small class="text-muted"
+                                    id="porcentajeReprobados">0%</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex flex-column justify-content-between h-100">
+                            <div class="mb-2"><i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                                <h6 class="text-muted mb-1">% Aprobación</h6>
+                                <h3 class="mb-0 text-info" id="porcentajeAprobacion">0%</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center">
+                        <div class="d-flex flex-column justify-content-between h-100">
+                            <div class="mb-2"><i class="fas fa-chart-line fa-2x text-warning mb-2"></i>
+                                <h6 class="text-muted mb-1">Promedio General</h6>
+                                <h3 class="mb-0 text-warning" id="promedioGeneral">0.0</h3><small class="text-muted">de
+                                    10.0</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <h4 class="mb-3">Mejores Desempeños</h4>
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Mejor Estudiante</h6>
+                                <h4 class="mb-0 text-success" id="mejorEstudiante">-</h4><small
+                                    class="text-muted">Calificación: <span
+                                        id="puntajeMejorEstudiante">0.0</span></small>
+                            </div>
+                            <div class="bg-soft-success rounded p-3"><i class="fas fa-medal fa-2x text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Mejor Equipo</h6>
+                                <h4 class="mb-0 text-primary" id="mejorEquipo">-</h4><small class="text-muted">Promedio:
+                                    <span id="promedioMejorEquipo">0.0</span></small>
+                            </div>
+                            <div class="bg-soft-primary rounded p-3"><i class="fas fa-users fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Mejor Grupo</h6>
+                                <h4 class="mb-0 text-info" id="mejorGrupo">-</h4><small class="text-muted">Promedio:
+                                    <span id="promedioMejorGrupo">0.0</span></small>
+                            </div>
+                            <div class="bg-soft-info rounded p-3"><i class="fas fa-trophy fa-2x text-warning"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <h4 class="mb-3">Atención Requerida</h4>
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Peor Estudiante</h6>
+                                <h4 class="mb-0 text-danger" id="peorEstudiante">-</h4><small
+                                    class="text-muted">Calificación: <span id="puntajePeorEstudiante">0.0</span></small>
+                            </div>
+                            <div class="bg-soft-danger rounded p-3"><i
+                                    class="fas fa-exclamation-triangle fa-2x text-danger"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Peor Equipo</h6>
+                                <h4 class="mb-0 text-warning" id="peorEquipo">-</h4><small class="text-muted">Promedio:
+                                    <span id="promedioPeorEquipo">0.0</span></small>
+                            </div>
+                            <div class="bg-soft-warning rounded p-3"><i
+                                    class="fas fa-users-slash fa-2x text-warning"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Peor Grupo</h6>
+                                <h4 class="mb-0 text-danger" id="peorGrupo">-</h4><small class="text-muted">Promedio:
+                                    <span id="promedioPeorGrupo">0.0</span></small>
+                            </div>
+                            <div class="bg-soft-danger rounded p-3"><i
+                                    class="fas fa-exclamation-circle fa-2x text-danger"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="accordion" id="graficosAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="graficosHeading"><button class="accordion-button" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#graficosCollapse" aria-expanded="true"
+                                aria-controls="graficosCollapse"><i class="fas fa-chart-bar me-2"></i> Gráficos</button>
+                        </h2>
+                        <div id="graficosCollapse" class="accordion-collapse collapse show"
+                            aria-labelledby="graficosHeading" data-bs-parent="#graficosAccordion">
+                            <div class="accordion-body p-3">
+                                <div class="container-fluid">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6 col-lg-4">
+                                            <div class="card h-100 shadow-sm">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0">Distribución de Calificaciones</h6>
+                                                </div>
+                                                <div class="card-body p-3">
+                                                    <div class="chart-container" style="position:relative;height:250px">
+                                                        <canvas id="calificacionesChart"></canvas></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-6 col-lg-4">
+                                            <div class="card h-100 shadow-sm">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0">Promedios por Equipo</h6>
+                                                </div>
+                                                <div class="card-body p-3">
+                                                    <div class="chart-container" style="position:relative;height:250px">
+                                                        <canvas id="equiposChart"></canvas></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-6 col-lg-4">
+                                            <div class="card h-100 shadow-sm">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0">Estado de Aprobación</h6>
+                                                </div>
+                                                <div class="card-body p-3">
+                                                    <div class="chart-container" style="position:relative;height:250px">
+                                                        <canvas id="aprobacionChart"></canvas></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="accordion" id="topAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="topHeading"><button class="accordion-button collapsed"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#topCollapse"
+                                aria-expanded="false" aria-controls="topCollapse"><i class="fas fa-trophy me-2"></i> Top
+                                Estudiantes</button></h2>
+                        <div id="topCollapse" class="accordion-collapse collapse" aria-labelledby="topHeading"
+                            data-bs-parent="#topAccordion">
+                            <div class="accordion-body p-3">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-hover align-middle mb-0 w-100"
+                                                id="topEstudiantesTable" style="background-color:#343a40;color:#f8f9fa">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th class="text-nowrap">#</th>
+                                                        <th class="text-nowrap">Estudiante</th>
+                                                        <th class="text-nowrap">Grupo</th>
+                                                        <th class="text-nowrap">Equipo</th>
+                                                        <th class="text-nowrap">Calificación</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="topEstudiantesBody" class="table-group-divider"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="accordion" id="listaAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="listaHeading"><button class="accordion-button collapsed"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#listaCollapse"
+                                aria-expanded="false" aria-controls="listaCollapse"><i class="fas fa-list me-2"></i>
+                                Lista de Estudiantes</button></h2>
+                        <div id="listaCollapse" class="accordion-collapse collapse" aria-labelledby="listaHeading"
+                            data-bs-parent="#listaAccordion">
+                            <div class="accordion-body p-3">
+                                <div class="container p-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body p-0"></div>
+                                        <div class="table-responsive w-100">
+                                            <table class="table table-dark table-hover align-middle mb-0 w-100"
+                                                id="estudiantesTable"
+                                                style="table-layout:auto;width:100%;background-color:#343a40;color:#f8f9fa">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th class="text-nowrap">ID</th>
+                                                        <th class="text-nowrap">Nombre</th>
+                                                        <th class="text-nowrap">Nick</th>
+                                                        <th class="text-nowrap">Grupo</th>
+                                                        <th class="text-nowrap">Equipo</th>
+                                                        <th class="text-nowrap">Asistencia</th>
+                                                        <th class="text-nowrap">Calificación</th>
+                                                        <th class="text-nowrap">Estado</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="estudiantesTableBody" class="table-group-divider"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="accordion" id="reprobadosAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="reprobadosHeading"><button class="accordion-button collapsed"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#reprobadosCollapse"
+                                aria-expanded="false" aria-controls="reprobadosCollapse"><i
+                                    class="fas fa-user-times me-2"></i> Alumnos Reprobados</button></h2>
+                        <div id="reprobadosCollapse" class="accordion-collapse collapse"
+                            aria-labelledby="reprobadosHeading" data-bs-parent="#reprobadosAccordion">
+                            <div class="accordion-body p-3">
+                                <div class="container p-3">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-body p-0"><button class="btn btn-danger mb-3"
+                                                id="descargarReprobadosBtn"><i class="fas fa-download me-1"></i>
+                                                Descargar Tabla</button>
+                                            <div class="table-responsive w-100">
+                                                <table class="table table-dark table-hover align-middle mb-0 w-100"
+                                                    id="reprobadosTable" style="width:100%">
+                                                    <thead class="table-dark">
+                                                        <tr>
+                                                            <th>Nombre</th>
+                                                            <th>Grupo</th>
+                                                            <th>Calificación Final</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="reprobadosTableBody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-12">
+                    <div class="accordion" id="actividadesAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="actividadesHeading"><button
+                                    class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#actividadesCollapse" aria-expanded="false"
+                                    aria-controls="actividadesCollapse"><i class="fas fa-tasks me-2"></i> Estadísticas
+                                    de Actividades</button></h2>
+                            <div id="actividadesCollapse" class="accordion-collapse collapse"
+                                aria-labelledby="actividadesHeading" data-bs-parent="#actividadesAccordion">
+                                <div class="accordion-body">
+                                    <div class="estadisticas-container bg-light p-4 rounded shadow-sm mb-4">
+                                        <h5 class="mb-3">Actividades</h5>
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <div class="row">
+                                                    <div class="col-12 mb-3">
+                                                        <div class="card border-0 shadow-sm h-100">
+                                                            <div class="card-body">
+                                                                <div class="d-flex align-items-center mb-3">
+                                                                    <div class="icon-box bg-success-light me-3"><i
+                                                                            class="fas fa-check-circle text-success"></i>
+                                                                    </div>
+                                                                    <h5 class="card-title mb-0">Actividad Más Entregada
+                                                                    </h5>
+                                                                </div>
+                                                                <div class="card-stats">
+                                                                    <h3 id="actividadMasEntregada">-</h3>
+                                                                    <p class="text-muted mb-0">Entregada por <span
+                                                                            id="porcentajeMasEntregada">0%</span> de
+                                                                        estudiantes</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12 mb-3">
+                                                        <div class="card border-0 shadow-sm h-100">
+                                                            <div class="card-body">
+                                                                <div class="d-flex align-items-center mb-3">
+                                                                    <div class="icon-box bg-danger-light me-3"><i
+                                                                            class="fas fa-times-circle text-danger"></i>
+                                                                    </div>
+                                                                    <h5 class="card-title mb-0">Actividad Menos
+                                                                        Entregada</h5>
+                                                                </div>
+                                                                <div class="card-stats">
+                                                                    <h3 id="actividadMenosEntregada">-</h3>
+                                                                    <p class="text-muted mb-0">Entregada por <span
+                                                                            id="porcentajeMenosEntregada">0%</span> de
+                                                                        estudiantes</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div
+                                                            class="d-flex justify-content-between align-items-center mb-3">
+                                                            <h5 class="card-title mb-0">Comparativa de Actividades</h5>
+                                                        </div>
+                                                        <div class="chart-container"
+                                                            style="position:relative;height:250px"><canvas
+                                                                id="actividadesChart"></canvas></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div
+                                                            class="d-flex justify-content-between align-items-center mb-3">
+                                                            <h5 class="card-title mb-0">Entregas por Actividad</h5>
+                                                        </div>
+                                                        <div class="chart-container"
+                                                            style="position:relative;height:250px"><canvas
+                                                                id="entregasActividadesChart"></canvas></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="estadisticas-container bg-light p-4 rounded shadow-sm mb-4">
+                                        <h5 class="mb-3">Cuestionarios</h5>
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <div class="row">
+                                                    <div class="col-12 mb-3">
+                                                        <div class="card border-0 shadow-sm h-100">
+                                                            <div class="card-body">
+                                                                <div class="d-flex align-items-center mb-3">
+                                                                    <div class="icon-box bg-success-light me-3"><i
+                                                                            class="fas fa-clipboard-check text-success"></i>
+                                                                    </div>
+                                                                    <h5 class="card-title mb-0">Cuestionario Más
+                                                                        Entregado</h5>
+                                                                </div>
+                                                                <div class="card-stats">
+                                                                    <h3 id="cuestionarioMasEntregado">-</h3>
+                                                                    <p class="text-muted mb-0">Entregado por <span
+                                                                            id="porcentajeCuestionarioMas">0%</span> de
+                                                                        estudiantes</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12 mb-3">
+                                                        <div class="card border-0 shadow-sm h-100">
+                                                            <div class="card-body">
+                                                                <div class="d-flex align-items-center mb-3">
+                                                                    <div class="icon-box bg-danger-light me-3"><i
+                                                                            class="fas fa-clipboard-list text-danger"></i>
+                                                                    </div>
+                                                                    <h5 class="card-title mb-0">Cuestionario Menos
+                                                                        Entregado</h5>
+                                                                </div>
+                                                                <div class="card-stats">
+                                                                    <h3 id="cuestionarioMenosEntregado">-</h3>
+                                                                    <p class="text-muted mb-0">Entregado por <span
+                                                                            id="porcentajeCuestionarioMenos">0%</span>
+                                                                        de estudiantes</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title mb-3">Comparativa de Cuestionarios</h5>
+                                                        <div class="chart-container"
+                                                            style="position:relative;height:250px"><canvas
+                                                                id="cuestionariosRadarChart"></canvas></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title mb-3">Entregas por Cuestionario</h5>
+                                                        <div class="chart-container"
+                                                            style="position:relative;height:250px"><canvas
+                                                                id="entregasCuestionariosChart"></canvas></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="estadisticas-container bg-light p-4 rounded shadow-sm mb-4">
+                                        <h5 class="mb-3">Proyectos, Bitácoras y Puntos Extra</h5>
+                                        <div class="row mb-4">
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title d-flex align-items-center"><i
+                                                                class="fas fa-project-diagram me-2 text-primary"></i>
+                                                            Proyecto</h5>
+                                                        <div class="mt-3" id="proyectoStats">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Entregados:</span><span
+                                                                    id="proyectoEntregados">0</span></div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Pendientes:</span><span
+                                                                    id="proyectoPendientes">0</span></div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Promedio:</span><span
+                                                                    id="proyectoPromedio">0.0</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title d-flex align-items-center"><i
+                                                                class="fas fa-chart-pie me-2 text-success"></i>
+                                                            Porcentaje de Entrega</h5>
+                                                        <div class="mt-3 d-flex flex-column align-items-center">
+                                                            <div class="position-relative"
+                                                                style="width:200px;height:200px"><canvas
+                                                                    id="proyectoEntregaChart"></canvas>
+                                                                <div
+                                                                    class="position-absolute top-50 start-50 translate-middle text-center">
+                                                                    <h3 class="mb-0" id="porcentajeEntregaProyecto">0%
+                                                                    </h3><small class="text-muted">Entregado</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title d-flex align-items-center"><i
+                                                                class="fas fa-chart-bar me-2 text-primary"></i>
+                                                            Distribución de Calificaciones</h5>
+                                                        <div class="chart-container"
+                                                            style="position:relative;height:250px"><canvas
+                                                                id="proyectoCalificacionesChart"></canvas></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-4">
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title d-flex align-items-center"><i
+                                                                class="fas fa-book me-2 text-info"></i> Bitácora</h5>
+                                                        <div class="mt-3" id="bitacoraStats">
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Entregadas:</span><span
+                                                                    id="bitacoraEntregados">0</span></div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Pendientes:</span><span
+                                                                    id="bitacoraPendientes">0</span></div>
+                                                            <div class="d-flex justify-content-between mb-2">
+                                                                <span>Promedio:</span><span
+                                                                    id="bitacoraPromedio">0.0</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title d-flex align-items-center"><i
+                                                                class="fas fa-chart-pie me-2 text-info"></i> Porcentaje
+                                                            de Entrega</h5>
+                                                        <div class="mt-3 d-flex flex-column align-items-center">
+                                                            <div class="position-relative"
+                                                                style="width:200px;height:200px"><canvas
+                                                                    id="bitacoraEntregaChart"></canvas>
+                                                                <div
+                                                                    class="position-absolute top-50 start-50 translate-middle text-center">
+                                                                    <h3 class="mb-0" id="porcentajeEntregaBitacora">0%
+                                                                    </h3><small class="text-muted">Entregado</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title d-flex align-items-center"><i
+                                                                class="fas fa-chart-bar me-2 text-info"></i>
+                                                            Distribución de Calificaciones</h5>
+                                                        <div class="chart-container"
+                                                            style="position:relative;height:250px"><canvas
+                                                                id="bitacoraCalificacionesChart"></canvas></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-4">
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <div class="d-flex align-items-center mb-3">
+                                                            <div class="icon-box bg-warning-light me-3"><i
+                                                                    class="fas fa-star text-warning"></i></div>
+                                                            <h5 class="card-title mb-0">Puntos Extra</h5>
+                                                        </div>
+                                                        <div class="card-stats">
+                                                            <div
+                                                                class="d-flex justify-content-between align-items-center mb-2">
+                                                                <span>Entregados:</span><span id="puntosExtraEntregados"
+                                                                    class="fw-bold">-</span></div>
+                                                            <div
+                                                                class="d-flex justify-content-between align-items-center">
+                                                                <span>Porcentaje:</span><span id="puntosExtraPorcentaje"
+                                                                    class="fw-bold">-</span></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card border-0 shadow-sm h-100">
+                                                    <div class="card-body">
+                                                        <h5 class="card-title d-flex align-items-center"><i
+                                                                class="fas fa-chart-bar me-2 text-warning"></i>
+                                                            Distribución de Puntos Extra</h5>
+                                                        <div class="mt-3">
+                                                            <div style="height:200px"><canvas
+                                                                    id="puntosExtraChart"></canvas></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><template id="grupoTemplate">
+            <div class="grupo-section mb-5 border-top pt-4">
+                <h3 class="mb-4 text-primary">Grupo <span class="grupo-nombre"></span></h3>
+                <div class="row">
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Mejor Estudiante</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h4 class="mejor-estudiante">-</h4>
+                                <p class="mb-0">Calificación: <span class="mejor-calificacion">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100 border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5>Estadísticas</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-1">Aprobados: <span class="aprobados">0</span></p>
+                                <p class="mb-1">Reprobados: <span class="reprobados">0</span></p>
+                                <p class="mb-0">Promedio: <span class="promedio">0.0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5>Distribución</h5>
+                            </div>
+                            <div class="card-body p-2"><canvas class="grupo-chart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h5>Top 3 del Grupo</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Estudiante</th>
+                                    <th>Equipo</th>
+                                    <th>Calificación</th>
+                                </tr>
+                            </thead>
+                            <tbody class="top3-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="equipos-container mt-4"></div>
+            </div>
+        </template><template id="equipoTemplate">
+            <div class="equipo-section mb-4 border-start border-4 ps-3">
+                <h4 class="mb-3 text-secondary">Equipo: <span class="equipo-nombre"></span></h4>
+                <div class="row">
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">Mejor Estudiante</h6>
+                            </div>
+                            <div class="card-body p-2 text-center">
+                                <p class="mb-1"><span class="mejor-estudiante">-</span></p>
+                                <p class="mb-0">Calificación: <span class="mejor-calificacion">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Estadísticas</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <p class="mb-1">Miembros: <span class="total-miembros">0</span></p>
+                                <p class="mb-0">Promedio: <span class="promedio">0.0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Distribución</h6>
+                            </div>
+                            <div class="card-body p-2"><canvas class="equipo-chart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Estudiante</th>
+                                <th>Calificación</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="equipo-miembros"></tbody>
+                    </table>
+                </div>
+            </div>
+        </template>
+        <div id="gruposContainer" class="mt-5"></div>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+        <script src="app.js"></script>
+</body>
+
+</html>

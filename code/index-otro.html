@@ -7,15 +7,118 @@
     <title>Dashboard de Estudiantes</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom styles for loading overlay and skeleton screens -->
+    <style>
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-content {
+            text-align: center;
+        }
+
+        /* Skeleton screens */
+        .skeleton-container {
+            display: none;
+        }
+
+        .skeleton-container.active {
+            display: block;
+        }
+
+        .skeleton-card {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+
+        .skeleton-line {
+            height: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            animation: skeleton-pulse 1.5s infinite;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+        }
+
+        .skeleton-title {
+            height: 20px;
+            width: 80%;
+        }
+
+        .skeleton-large {
+            height: 24px;
+            width: 60%;
+        }
+
+        .skeleton-small {
+            height: 14px;
+            width: 40%;
+        }
+
+        .skeleton-chart {
+            height: 200px;
+            border-radius: 4px;
+            animation: skeleton-pulse 1.5s infinite;
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+        }
+
+        @keyframes skeleton-pulse {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* Dark mode styles for skeleton */
+        .dark .skeleton-line,
+        .dark .skeleton-chart {
+            background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+            background-size: 200% 100%;
+        }
+
+        .dark .skeleton-card {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Blur the main content when loading */
+        .loading-active .main-content > *:not(.loading-overlay):not(.skeleton-container) {
+            filter: blur(4px);
+            pointer-events: none;
+        }
+    </style>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        // Paleta basada en la imagen de ejemplo
                         'brand-purple': '#7F56D9',
                         'brand-purple-light': '#A450E4',
                         'brand-blue': '#5C86FF',
@@ -23,32 +126,28 @@
                         'brand-pink': '#F75A7F',
                         'brand-yellow': '#FACC15',
                         'dark-bg-page': '#1D1E26',
-                        'dark-bg-card': '#2C2F3B',      // Principal para fondos de tarjeta
-                        'dark-bg-sidebar': '#252832', // Ligeramente diferente para sidebar si se desea
+                        'dark-bg-card': '#2C2F3B',
+                        'dark-bg-sidebar': '#252832',
                         'dark-border': '#3E4252',
                         'dark-text-primary': '#F3F4F6',
                         'dark-text-secondary': '#9CA3AF',
-
-                        // Mantener para compatibilidad con clases existentes si es necesario
-                        // o renombrar en el HTML si se prefiere usar los nuevos nombres directamente.
-                        'custom-cyan': '#5C86FF', // Mapeado a brand-blue
-                        'custom-pink': '#F75A7F',  // Mapeado a brand-pink
-                        'custom-strong-blue': '#7F56D9', // Mapeado a brand-purple
-                        'custom-dark-blue': '#2C2F3B', // Mapeado a dark-bg-card
-                        'custom-teal': '#22C55E', // Mapeado a brand-green
-                        'custom-mauve': '#A450E4', // Mapeado a brand-purple-light
-                        'custom-gray-1': '#3E4252', // Mapeado a dark-border
+                        'custom-cyan': '#5C86FF',
+                        'custom-pink': '#F75A7F',
+                        'custom-strong-blue': '#7F56D9',
+                        'custom-dark-blue': '#2C2F3B',
+                        'custom-teal': '#22C55E',
+                        'custom-mauve': '#A450E4',
+                        'custom-gray-1': '#3E4252',
                         'custom-gray-2': '#4B5563',
                         'custom-gray-3': '#374151',
                         'custom-very-dark-gray': '#1F2937',
-                        'card-bg-custom': '#2C2F3B', // Mapeado a dark-bg-card
+                        'card-bg-custom': '#2C2F3B',
                     }
                 }
             }
         }
     </script>
     <script>
-        // Dark mode toggle y init (sin cambios)
         function applyDarkMode(isDark) {
             if (isDark) {
                 document.documentElement.classList.add('dark');
@@ -61,19 +160,21 @@
             }
         }
 
-        function updateDarkModeButton(isDark) {
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            if (darkModeToggle) {
-                darkModeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i> Modo Claro' : '<i class="fas fa-moon"></i> Modo Oscuro';
-                darkModeToggle.setAttribute('aria-label', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
+        function updateDarkModeButtonText(isDark, buttonElement) {
+            if (buttonElement) {
+                buttonElement.innerHTML = isDark ? '<i class="fas fa-sun"></i> <span class="d-none d-lg-inline">Modo Claro</span>' : '<i class="fas fa-moon"></i> <span class="d-none d-lg-inline">Modo Oscuro</span>';
+                if (buttonElement.id === 'mobileDarkModeToggle') { // Para el botón móvil
+                    buttonElement.innerHTML = isDark ? '<i class="fas fa-sun me-2"></i>Modo Claro' : '<i class="fas fa-moon me-2"></i>Modo Oscuro';
+                }
+                buttonElement.setAttribute('aria-label', isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro');
             }
         }
 
         function toggleDarkMode() {
-            const currentTheme = localStorage.theme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            const isDark = currentTheme !== 'dark'; // Cambia al opuesto
-            applyDarkMode(isDark);
-            updateDarkModeButton(isDark);
+            const isCurrentlyDark = document.documentElement.classList.contains('dark');
+            applyDarkMode(!isCurrentlyDark);
+            updateDarkModeButtonText(!isCurrentlyDark, document.getElementById('darkModeToggle'));
+            updateDarkModeButtonText(!isCurrentlyDark, document.getElementById('mobileDarkModeToggle'));
         }
 
         function initTheme() {
@@ -81,14 +182,17 @@
                 (!('theme' in localStorage) &&
                     window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-            applyDarkMode(isDark); // Aplicar el tema guardado o del sistema
-            updateDarkModeButton(isDark); // Actualizar el botón
+            applyDarkMode(isDark);
+            updateDarkModeButtonText(isDark, document.getElementById('darkModeToggle'));
+            updateDarkModeButtonText(isDark, document.getElementById('mobileDarkModeToggle'));
+
 
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-                if (!('theme' in localStorage)) { // Solo si no hay preferencia guardada
+                if (!('theme' in localStorage)) {
                     const isSystemDark = e.matches;
                     applyDarkMode(isSystemDark);
-                    updateDarkModeButton(isSystemDark);
+                    updateDarkModeButtonText(isSystemDark, document.getElementById('darkModeToggle'));
+                    updateDarkModeButtonText(isSystemDark, document.getElementById('mobileDarkModeToggle'));
                 }
             });
         }
@@ -96,12 +200,9 @@
     </script>
     <style>
         :root {
-            /* Fallback para tema claro o si JS falla */
             --bs-font-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             --bs-body-font-size: 0.9rem;
-
             --bs-primary: #7F56D9;
-            /* Morado como primario por defecto */
             --bs-primary-rgb: 127, 86, 217;
             --bs-secondary: #A450E4;
             --bs-secondary-rgb: 164, 80, 228;
@@ -113,31 +214,21 @@
             --bs-warning-rgb: 250, 204, 21;
             --bs-danger: #F75A7F;
             --bs-danger-rgb: 247, 90, 127;
-
             --bs-light: #f0f2f5;
             --bs-light-rgb: 240, 242, 245;
             --bs-dark: #3E4252;
-            /* Un gris oscuro para el modo claro */
             --bs-dark-rgb: 62, 66, 82;
-
             --bs-body-color: #1D1E26;
-            /* Texto oscuro sobre fondo claro */
             --bs-body-color-rgb: 29, 30, 38;
             --bs-body-bg: #ffffff;
             --bs-body-bg-rgb: 255, 255, 255;
-
             --bs-emphasis-color: #000000;
             --bs-secondary-color: rgba(var(--bs-body-color-rgb), 0.75);
             --bs-tertiary-color: rgba(var(--bs-body-color-rgb), 0.5);
             --bs-secondary-bg: #f0f2f5;
-            /* Fondo secundario claro */
             --bs-tertiary-bg: #e9ecef;
-            /* Fondo terciario claro (sidebar) */
-
             --bs-border-color: #DDDDDD;
             --bs-border-color-translucent: rgba(0, 0, 0, 0.1);
-
-            /* Variables personalizadas para tarjetas en tema claro */
             --card-bg-custom: #FFFFFF;
             --card-text-custom: #1D1E26;
             --card-text-muted-custom: #555b68;
@@ -157,36 +248,21 @@
             --bs-warning-rgb: 250, 204, 21;
             --bs-danger: #F75A7F;
             --bs-danger-rgb: 247, 90, 127;
-
             --bs-light: #3E4252;
-            /* Mapeado a dark-border */
             --bs-light-rgb: 62, 66, 82;
             --bs-dark: #F3F4F6;
-            /* Mapeado a dark-text-primary */
             --bs-dark-rgb: 243, 244, 246;
-
             --bs-body-color: #F3F4F6;
-            /* dark-text-primary */
             --bs-body-color-rgb: 243, 244, 246;
             --bs-body-bg: #1D1E26;
-            /* dark-bg-page */
             --bs-body-bg-rgb: 29, 30, 38;
-
             --bs-emphasis-color: #FFFFFF;
             --bs-secondary-color: #9CA3AF;
-            /* dark-text-secondary */
             --bs-tertiary-color: rgba(156, 163, 175, 0.5);
-
             --bs-secondary-bg: #252832;
-            /* dark-bg-sidebar o un gris intermedio para elementos */
             --bs-tertiary-bg: #2C2F3B;
-            /* dark-bg-card (para sidebar y otros elementos principales) */
-
             --bs-border-color: #3E4252;
-            /* dark-border */
             --bs-border-color-translucent: rgba(62, 66, 82, 0.5);
-
-            /* Variables personalizadas para tarjetas en tema oscuro */
             --card-bg-custom: #2C2F3B;
             --card-text-custom: #F3F4F6;
             --card-text-muted-custom: #9CA3AF;
@@ -211,7 +287,6 @@
             transition: all 0.3s ease-in-out;
             width: 250px;
             background-color: var(--bs-secondary-bg);
-            /* Usar secondary-bg para sidebar */
         }
 
         .sidebar-sticky {
@@ -260,7 +335,6 @@
             z-index: 1030;
             height: 56px;
             background-color: var(--bs-tertiary-bg);
-            /* Navbar con el mismo fondo que las tarjetas */
             border-bottom: 1px solid var(--bs-border-color) !important;
         }
 
@@ -272,21 +346,18 @@
         .navbar .form-select,
         .navbar .btn {
             background-color: var(--bs-secondary-bg) !important;
-            /* Inputs con fondo ligeramente diferente */
             border-color: var(--bs-border-color) !important;
             color: var(--bs-body-color) !important;
         }
 
         .navbar .form-select option {
             background-color: var(--bs-secondary-bg);
-            /* Opciones del select */
             color: var(--bs-body-color);
         }
 
         html[data-bs-theme="dark"] .navbar .form-select,
         html[data-bs-theme="dark"] .navbar .btn {
             background-color: var(--bs-secondary-bg) !important;
-            /* Inputs con fondo ligeramente diferente */
         }
 
 
@@ -340,7 +411,6 @@
             display: block;
         }
 
-        /* Estilos de semáforo y tarjeta */
         .semaforo-calificacion {
             display: inline-flex;
             align-items: center;
@@ -365,15 +435,10 @@
             color: var(--card-text-custom);
         }
 
-        /* asegurar texto claro en tarjetas oscuras */
         .card .texto-semaforo {
             color: var(--card-text-custom);
         }
 
-        /* Texto del semáforo dentro de tarjeta */
-
-
-        /* Clases soft para iconos en tarjetas (Bootstrap general) */
         .bg-soft-primary {
             background-color: rgba(var(--bs-primary-rgb), 0.2) !important;
         }
@@ -414,27 +479,22 @@
             color: var(--bs-warning) !important;
         }
 
-        /* Estilos de tarjeta */
         .card {
             background-color: var(--card-bg-custom) !important;
             color: var(--card-text-custom) !important;
             border: 1px solid var(--card-border-custom) !important;
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, .075);
-            /* Sombra sutil genérica */
         }
 
         html[data-bs-theme="dark"] .card {
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, .25);
-            /* Sombra más visible en oscuro */
         }
 
         .card-header {
             background-color: transparent !important;
-            /* o var(--card-bg-custom) si se prefiere con un ligero tono */
             border-bottom: 1px solid var(--card-border-custom) !important;
             color: var(--card-text-custom) !important;
             padding: 0.75rem 1rem;
-            /* Ajuste de padding */
         }
 
         .card h1,
@@ -450,14 +510,22 @@
         .card small,
         .card span,
         .card div:not(.icon-circle):not(.semaforo-calificacion) {
+            /* color: var(--card-text-custom) !important; */
+            /* Comentado para permitir que Tailwind maneje colores de texto dentro de la tarjeta */
+        }
+
+        .card>.card-body p,
+        .card>.card-body small,
+        .card>.card-body span {
+            /* Para p, small, span directos en card-body */
             color: var(--card-text-custom) !important;
         }
+
 
         .card .text-muted {
             color: var(--card-text-muted-custom) !important;
         }
 
-        /* Icon circle styles */
         .icon-circle {
             display: inline-flex;
             align-items: center;
@@ -467,8 +535,7 @@
             border-radius: 50%;
             font-size: 1rem;
         }
-        
-        /* Responsive adjustments */
+
         @media (max-width: 768px) {
             .icon-circle {
                 width: 2rem;
@@ -476,8 +543,7 @@
                 font-size: 0.875rem;
             }
         }
-        
-        /* Ensure text colors are properly inherited */
+
         .icon-circle i {
             color: inherit;
         }
@@ -486,7 +552,6 @@
             position: relative;
         }
 
-        /* DataTables styles for dark theme */
         html[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length label,
         html[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter label,
         html[data-bs-theme="dark"] .dataTables_wrapper .dataTables_info,
@@ -497,12 +562,10 @@
         html[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter input[type="search"],
         html[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length select {
             background-color: var(--bs-secondary-bg);
-            /* Usar un fondo ligeramente diferente para inputs */
             color: var(--bs-body-color);
             border-color: var(--bs-border-color);
         }
 
-        /* DataTables styles for light theme */
         .dataTables_wrapper .dataTables_length label,
         .dataTables_wrapper .dataTables_filter label,
         .dataTables_wrapper .dataTables_info {
@@ -516,19 +579,15 @@
             border-color: var(--bs-border-color);
         }
 
-        /* Table styles */
         html[data-bs-theme="dark"] .table {
             --bs-table-color: var(--bs-body-color);
             --bs-table-bg: transparent;
-            /* Las tarjetas ya tienen fondo */
             --bs-table-border-color: var(--bs-border-color);
             --bs-table-striped-bg: rgba(var(--bs-light-rgb), 0.03);
-            /* Usar bs-light para striping sutil */
             --bs-table-hover-bg: rgba(var(--bs-light-rgb), 0.05);
         }
 
         .table {
-            /* Light theme table */
             --bs-table-color: var(--bs-body-color);
             --bs-table-bg: transparent;
             --bs-table-border-color: var(--bs-border-color);
@@ -542,18 +601,83 @@
         }
 
         html[data-bs-theme="light"] .page-item.active .page-link {
-            color: var(--bs-white) !important;
-            /* Texto blanco en paginación activa modo claro */
+            color: white !important;
         }
 
         html[data-bs-theme="dark"] .page-item.active .page-link {
             color: var(--bs-body-bg) !important;
-            /* Texto color fondo en paginación activa modo oscuro para contraste */
+        }
+
+        .mobile-filters-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 320px;
+            height: 100vh;
+            background-color: var(--bs-body-bg);
+            z-index: 1100;
+            transition: right 0.3s ease-in-out;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .mobile-filters-menu.show {
+            right: 0;
+        }
+
+        .mobile-filters-content {
+            padding: 1.25rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mobile-filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--bs-border-color);
+        }
+
+        .mobile-filters-body {
+            flex: 1;
+            overflow-y: auto;
+            /* Para permitir scroll si hay muchos filtros */
+        }
+
+        .mobile-filters-footer {
+            padding-top: 1rem;
+            margin-top: 1rem;
+            border-top: 1px solid var(--bs-border-color);
+        }
+
+        .mobile-filters-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1099;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .mobile-filters-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        body.mobile-menu-open {
+            overflow: hidden;
         }
 
         .table-hover tbody tr:hover {
             color: var(--bs-emphasis-color);
-            /* Podría ser --bs-primary para resaltar más */
             background-color: var(--bs-table-hover-bg);
         }
 
@@ -562,18 +686,14 @@
         }
 
         thead.table-light th {
-            /* Table header styling */
             background-color: rgba(var(--bs-primary-rgb), 0.08) !important;
-            /* Un tono muy sutil del primario */
             color: var(--bs-emphasis-color) !important;
         }
 
         html[data-bs-theme="dark"] thead.table-light th {
             background-color: rgba(var(--bs-light-rgb), 0.05) !important;
-            /* Un gris muy sutil para header en oscuro */
         }
 
-        /* Badges - Forzar texto blanco para consistencia con imagen */
         .badge {
             color: #FFFFFF !important;
         }
@@ -598,7 +718,6 @@
             background-color: var(--bs-warning) !important;
         }
 
-        /* Tailwind border color overrides para que usen la variable CSS general */
         .dark .border-slate-200,
         .dark .border-slate-300,
         .dark .border-slate-600,
@@ -608,10 +727,8 @@
         .border-slate-600,
         .border-slate-700 {
             border-color: var(--card-border-custom) !important;
-            /* Usar la variable de borde de tarjeta */
         }
 
-        /* Clases de texto de Tailwind para que usen las variables CSS (para los h2, h3 en JS) */
         .text-dark-text-primary {
             color: var(--bs-body-color);
         }
@@ -620,7 +737,6 @@
             color: var(--bs-body-color);
         }
 
-        /* Ya está cubierto por el general, pero por si acaso */
         .border-dark-border {
             border-color: var(--bs-border-color);
         }
@@ -628,18 +744,55 @@
         .dark .border-dark-border {
             border-color: var(--bs-border-color);
         }
+
+        /* Estilo para el fondo de la barra de progreso */
+        .progress {
+            background-color: var(--bs-border-color) !important;
+            /* Fondo sutil */
+        }
+
+        html[data-bs-theme="dark"] .progress {
+            background-color: rgba(var(--bs-light-rgb), 0.1) !important;
+            /* Más sutil en oscuro */
+        }
+
+        /* Mejorar visibilidad del texto de placeholder en Tailwind input en modo oscuro */
+        .dark .dark\:placeholder-gray-500::placeholder {
+            color: #9CA3AF;
+            /* Un gris más claro que el default de Tailwind para dark placeholder */
+        }
+
+        .dark .dark\:bg-gray-100 {
+            /* Cambiar el fondo del input de búsqueda en tema oscuro */
+            background-color: var(--bs-secondary-bg) !important;
+            /* Usar un color de fondo del tema */
+            border-color: var(--bs-border-color) !important;
+            color: var(--bs-body-color) !important;
+        }
+
+        .dark .dark\:bg-gray-100:focus {
+            border-color: var(--bs-primary) !important;
+            box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+        }
     </style>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-md fixed-top"> <!-- Removido border-bottom, ya lo tiene de CSS variables -->
+    <nav class="navbar navbar-expand-md fixed-top">
         <div class="container-fluid">
             <button class="btn btn-outline-secondary me-2 sidebar-toggler" type="button" id="sidebarToggle">
                 <i class="fas fa-bars"></i>
             </button>
             <a class="navbar-brand" href="#">Dashboard Estudiantes</a>
 
-            <div class="ms-auto d-flex align-items-center">
+            <div class="d-none d-md-flex ms-auto align-items-center">
+                <div class="dropdown me-2">
+                    <select id="parcialFilter" class="form-select form-select-sm" aria-label="Seleccionar Parcial">
+                        <option value="1" selected>1° Parcial</option>
+                        <option value="2">2° Parcial</option>
+                        <option value="3">3° Parcial</option>
+                    </select>
+                </div>
                 <div class="dropdown me-2">
                     <select id="grupoFilter" class="form-select form-select-sm" aria-label="Filtrar por grupo">
                         <option value="">Todos los grupos</option>
@@ -661,8 +814,65 @@
                     <i class="fas fa-undo-alt"></i>
                 </button>
                 <button id="darkModeToggle" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-moon"></i> Modo Oscuro
+                    <i class="fas fa-moon"></i> <span class="d-none d-lg-inline">Modo Oscuro</span>
                 </button>
+            </div>
+
+            <div class="d-md-none ms-auto">
+                <button class="btn btn-outline-secondary" type="button" id="mobileMenuButton">
+                    <i class="fas fa-sliders-h"></i>
+                </button>
+            </div>
+
+            <div class="mobile-filters-menu d-md-none">
+                <div class="mobile-filters-content">
+                    <div class="mobile-filters-header">
+                        <h5 class="mb-0">Filtros y Opciones</h5>
+                        <button type="button" class="btn-close" id="closeMobileMenu"></button>
+                    </div>
+                    <div class="mobile-filters-body">
+                        <div class="mb-3">
+                            <label for="mobileParcialFilter" class="form-label">Parcial</label>
+                            <select id="mobileParcialFilter" class="form-select form-select-sm" aria-label="Seleccionar Parcial">
+                                <option value="1" selected>1° Parcial</option>
+                                <option value="2">2° Parcial</option>
+                                <option value="3">3° Parcial</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="mobileGrupoFilter" class="form-label">Grupo</label>
+                            <select id="mobileGrupoFilter" class="form-select form-select-sm"
+                                aria-label="Filtrar por grupo">
+                                <option value="">Todos los grupos</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="mobileEquipoFilter" class="form-label">Equipo</label>
+                            <select id="mobileEquipoFilter" class="form-select form-select-sm"
+                                aria-label="Filtrar por equipo">
+                                <option value="">Todos los equipos</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="mobileEstadoFilter" class="form-label">Estado</label>
+                            <select id="mobileEstadoFilter" class="form-select form-select-sm"
+                                aria-label="Filtrar por estado">
+                                <option value="">Todos</option>
+                                <option value="Aprobado">Aprobado</option>
+                                <option value="Reprobado">Reprobado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mobile-filters-footer d-grid gap-2">
+                        <button id="mobileApplyFilters" class="btn btn-primary">Aplicar y Cerrar</button>
+                        <button id="mobileResetFilters" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo-alt me-2"></i>Limpiar filtros
+                        </button>
+                        <button id="mobileDarkModeToggle" class="btn btn-outline-secondary">
+                            <i class="fas fa-moon me-2"></i>Modo Oscuro
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -677,7 +887,7 @@
                         <li class="nav-item"> <a class="nav-link" href="#" data-section="listaEstudiantes"> <i
                                     class="fas fa-users"></i> Lista de Estudiantes </a> </li>
                         <li class="nav-item"> <a class="nav-link" href="#" data-section="topEstudiantes"> <i
-                                    class="fas fa-trophy"></i> Top Estudiantes </a> </li>
+                                    class="fas fa-trophy"></i> Rankings y Desempeño </a> </li>
                         <li class="nav-item"> <a class="nav-link" href="#" data-section="alumnosReprobados"> <i
                                     class="fas fa-user-times"></i> Alumnos Reprobados </a> </li>
                         <li class="nav-item"> <a class="nav-link" href="#" data-section="analisisGruposEquipos"> <i
@@ -689,10 +899,228 @@
             </nav>
 
             <main class="main-content col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <div class="loading spinner-border text-primary" role="status"> <span
-                        class="visually-hidden">Cargando...</span> </div>
+                <!-- Loading overlay with blur effect -->
+<div class="loading-overlay">
+    <div class="loading-content">
+        <div class="spinner-border text-light" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3 text-light">Cargando datos...</p>
+    </div>
+</div>
 
-                <!-- Contenido de las secciones (sin cambios estructurales, solo de estilo via CSS/JS) -->
+<!-- Skeleton screens for each section -->
+<div class="skeleton-container visionGeneral-skeleton">
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3" v-for="i in 4">
+            <div class="card skeleton-card">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-2"></div>
+                    <div class="skeleton-line skeleton-large mb-1"></div>
+                    <div class="skeleton-line skeleton-small"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card skeleton-card h-100">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-3"></div>
+                    <div class="skeleton-chart"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card skeleton-card h-100">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-3"></div>
+                    <div class="skeleton-chart"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card skeleton-card h-100">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-3"></div>
+                    <div class="skeleton-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estudiantes skeleton -->
+<div class="skeleton-container estudiantes-skeleton">
+    <div class="card skeleton-card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between mb-3">
+                <div class="skeleton-line skeleton-title" style="width: 200px;"></div>
+                <div class="skeleton-line" style="width: 120px;"></div>
+            </div>
+            
+            <!-- Table skeleton -->
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actividades skeleton -->
+<div class="skeleton-container actividades-skeleton">
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card skeleton-card h-100">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-3"></div>
+                    <div class="skeleton-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card skeleton-card h-100">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-3"></div>
+                    <div class="skeleton-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card skeleton-card mb-4">
+        <div class="card-body">
+            <div class="skeleton-line skeleton-title mb-3"></div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cuestionarios skeleton -->
+<div class="skeleton-container cuestionarios-skeleton">
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card skeleton-card h-100">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-3"></div>
+                    <div class="skeleton-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card skeleton-card h-100">
+                <div class="card-body">
+                    <div class="skeleton-line skeleton-title mb-3"></div>
+                    <div class="skeleton-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card skeleton-card mb-4">
+        <div class="card-body">
+            <div class="skeleton-line skeleton-title mb-3"></div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                            <th><div class="skeleton-line" style="width: 100%;"></div></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                        </tr>
+                        <tr>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                            <td><div class="skeleton-line" style="width: 100%;"></div></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reportes skeleton -->
+<div class="skeleton-container reportes-skeleton">
+    <div class="card skeleton-card mb-4">
+        <div class="card-body">
+            <div class="skeleton-line skeleton-title mb-3"></div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="skeleton-line" style="width: 100%; height: 40px;"></div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="skeleton-line" style="width: 100%; height: 40px;"></div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="skeleton-line" style="width: 100%; height: 40px;"></div>
+                </div>
+            </div>
+            <div class="skeleton-chart" style="height: 400px;"></div>
+        </div>
+    </div>
+</div>
+
                 <div id="visionGeneral" class="section-content active">
                     <h2 class="h3 mb-4 pt-3 border-bottom pb-2">Visión General</h2>
                     <div class="row mb-4">
@@ -739,7 +1167,6 @@
                             </div>
                         </div>
                         <div class="col-12 col-sm-4 col-lg-2 mb-3">
-                            <!-- Corregido col-sm-8 a col-sm-4 para layout más consistente -->
                             <div class="card text-center h-100">
                                 <div class="card-body">
                                     <div class="icon-circle bg-soft-warning text-warning mx-auto mb-2"><i
@@ -747,90 +1174,6 @@
                                     <h6 class="text-muted mb-1">Promedio Gral.</h6>
                                     <h3 class="mb-0 text-warning" id="promedioGeneral">0.0</h3> <small
                                         class="text-muted">de 10.0</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <h4 class="h5 mb-3">Desempeños Destacados</h4>
-                    <div class="row mb-4">
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="icon-circle bg-soft-success text-success me-3"><i
-                                            class="fas fa-medal fa-lg"></i></div>
-                                    <div>
-                                        <h6 class="text-muted mb-1">Mejor Estudiante</h6>
-                                        <h4 class="mb-0 text-success" id="mejorEstudiante">-</h4> <small
-                                            class="text-muted">Cal: <span id="puntajeMejorEstudiante">0.0</span></small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="icon-circle bg-soft-primary text-primary me-3"><i
-                                            class="fas fa-users fa-lg"></i></div>
-                                    <div>
-                                        <h6 class="text-muted mb-1">Mejor Equipo</h6>
-                                        <h4 class="mb-0 text-primary" id="mejorEquipo">-</h4> <small
-                                            class="text-muted">Prom: <span id="promedioMejorEquipo">0.0</span></small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="icon-circle bg-soft-info text-info me-3"><i
-                                            class="fas fa-trophy fa-lg"></i></div>
-                                    <div>
-                                        <h6 class="text-muted mb-1">Mejor Grupo</h6>
-                                        <h4 class="mb-0 text-info" id="mejorGrupo">-</h4> <small
-                                            class="text-muted">Prom: <span id="promedioMejorGrupo">0.0</span></small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <h4 class="h5 mb-3">Áreas de Atención</h4>
-                    <div class="row mb-4">
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="icon-circle bg-soft-danger text-danger me-3"><i
-                                            class="fas fa-exclamation-triangle fa-lg"></i></div>
-                                    <div>
-                                        <h6 class="text-muted mb-1">Peor Estudiante</h6>
-                                        <h4 class="mb-0 text-danger" id="peorEstudiante">-</h4> <small
-                                            class="text-muted">Cal: <span id="puntajePeorEstudiante">0.0</span></small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="icon-circle bg-soft-warning text-warning me-3"><i
-                                            class="fas fa-users-slash fa-lg"></i></div>
-                                    <div>
-                                        <h6 class="text-muted mb-1">Peor Equipo</h6>
-                                        <h4 class="mb-0 text-warning" id="peorEquipo">-</h4> <small
-                                            class="text-muted">Prom: <span id="promedioPeorEquipo">0.0</span></small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <div class="card h-100">
-                                <div class="card-body d-flex align-items-center">
-                                    <div class="icon-circle bg-soft-danger text-danger me-3"><i
-                                            class="fas fa-exclamation-circle fa-lg"></i></div>
-                                    <div>
-                                        <h6 class="text-muted mb-1">Peor Grupo</h6>
-                                        <h4 class="mb-0 text-danger" id="peorGrupo">-</h4> <small
-                                            class="text-muted">Prom: <span id="promedioPeorGrupo">0.0</span></small>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -864,15 +1207,27 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Promedio Final por Grupo</h6>
+                                </div>
+                                <div class="card-body p-3 chart-container" style="min-height: 300px; height: auto;">
+                                    <canvas id="gruposPromedioChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="listaEstudiantes" class="section-content">
                     <h2 class="h3 mb-4 pt-3 border-bottom pb-2">Lista de Estudiantes</h2>
-                    <div class="card"> <!-- Las tablas estarán dentro de una tarjeta principal -->
+                    <div class="card">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle w-100" id="estudiantesTable">
-                                    <thead class="table-light"> <!-- Usar table-light para el header de la tabla -->
+                                <table class="table table-hover align-middle w-100 responsive" id="estudiantesTable">
+                                    <thead class="table-light">
                                         <tr>
                                             <th>ID</th>
                                             <th>Nombre</th>
@@ -892,21 +1247,160 @@
                 </div>
 
                 <div id="topEstudiantes" class="section-content">
-                    <h2 class="h3 mb-4 pt-3 border-bottom pb-2">Top Estudiantes</h2>
-                    <div class="card">
+                    <h2 class="h3 mb-4 pt-3 border-bottom pb-2">Rankings y Desempeño</h2>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">¿Cómo se calcula la Puntuación General?</h5>
+                            <p class="card-text">
+                                La puntuación general de cada estudiante (de 0 a 100%) se calcula ponderando diferentes aspectos de
+                                su desempeño:
+                            </p>
+                            <ul class="list-disc pl-5 text-sm text-gray-700 dark:text-gray-300">
+                                <li><strong>Promedio Final de Calificaciones:</strong> <span id="pesoPromedioFinal"></span>%</li>
+                                <li><strong>Porcentaje de Entregas de Actividades:</strong> <span id="pesoEntregas"></span>%</li>
+                                <li><strong>Calificación del Proyecto Final:</strong> <span id="pesoProyecto"></span>%</li>
+                                <li><strong>Calificación de la Bitácora:</strong> <span id="pesoBitacora"></span>%</li>
+                                <li><strong>Porcentaje de Asistencia:</strong> <span id="pesoAsistencia"></span>%</li>
+                            </ul>
+                            <p class="card-text mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                Cada uno de estos componentes se normaliza (escala de 0 a 1) antes de aplicar su peso
+                                correspondiente.
+                                La puntuación de equipos y grupos se basa en el promedio de las puntuaciones individuales de sus
+                                miembros, con una posible bonificación por equidad en el desempeño.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="icon-circle bg-soft-primary text-primary mx-auto mb-3">
+                                        <i class="fas fa-trophy"></i>
+                                    </div>
+                                    <h5 class="card-title">Mejor Estudiante</h5>
+                                    <p class="h4 mb-1" id="mejorEstudiante">-</p> 
+                                    <p class="text-muted mb-0">Puntaje: <span id="puntajeMejorEstudiante"
+                                            class="fw-bold">0.0</span>%</p> 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="icon-circle bg-soft-warning text-warning mx-auto mb-3">
+                                        <i class="fas fa-user-graduate"></i>
+                                    </div>
+                                    <h5 class="card-title">Estudiante con Menor Puntaje</h5>
+                                    <p class="h4 mb-1" id="peorEstudiante">-</p> 
+                                    <p class="text-muted mb-0">Puntaje: <span id="puntajePeorEstudiante"
+                                            class="fw-bold">0.0</span>%</p> 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="icon-circle bg-soft-success text-success mx-auto mb-3">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <h5 class="card-title">Mejor Equipo</h5>
+                                    <p class="h4 mb-1" id="mejorEquipo">-</p> 
+                                    <p class="text-muted mb-0">Puntaje: <span id="promedioMejorEquipo"
+                                            class="fw-bold">0.0</span>%</p> 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="icon-circle bg-soft-danger text-danger mx-auto mb-3">
+                                        <i class="fas fa-users-slash"></i>
+                                    </div>
+                                    <h5 class="card-title">Equipo con Menor Puntaje</h5>
+                                    <p class="h4 mb-1" id="peorEquipo">-</p>
+                                    <p class="text-muted mb-0">Puntaje: <span id="promedioPeorEquipo"
+                                            class="fw-bold">0.0</span>%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="icon-circle bg-soft-info text-info mx-auto mb-3">
+                                        <i class="fas fa-layer-group"></i>
+                                    </div>
+                                    <h5 class="card-title">Mejor Grupo</h5>
+                                    <p class="h4 mb-1" id="mejorGrupo">-</p> 
+                                    <p class="text-muted mb-0">Puntaje: <span id="promedioMejorGrupo"
+                                            class="fw-bold">0.0</span>%</p> 
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <div class="icon-circle bg-soft-danger text-danger mx-auto mb-3">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                    </div>
+                                    <h5 class="card-title">Grupo con Menor Puntaje</h5>
+                                    <p class="h4 mb-1" id="peorGrupo">-</p>
+                                    <p class="text-muted mb-0">Puntaje: <span id="promedioPeorGrupo"
+                                            class="fw-bold">0.0</span>%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 bg-card-bg-custom text-card-text-custom">
+                                <div class="card-header">
+                                    <h5 class="mb-0 card-title">Top 10 Estudiantes (Puntuación General)</h5>
+                                </div>
+                                <div class="card-body p-2" id="topEstudiantesContainer">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 bg-card-bg-custom text-card-text-custom">
+                                <div class="card-header">
+                                    <h5 class="mb-0 card-title">Estudiantes con Oportunidades (Menor Puntaje)</h5>
+                                </div>
+                                <div class="card-body p-2" id="peoresEstudiantesContainer">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 bg-card-bg-custom text-card-text-custom">
+                                <div class="card-header">
+                                    <h5 class="mb-0 card-title">Top 5 Equipos</h5>
+                                </div>
+                                <div class="card-body p-2" id="topEquiposContainer">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 bg-card-bg-custom text-card-text-custom">
+                                <div class="card-header">
+                                    <h5 class="mb-0 card-title">Ranking de Grupos</h5>
+                                </div>
+                                <div class="card-body p-2" id="rankingGruposContainer">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Tabla Resumen: Mejores Estudiantes por Calificación Final</h5>
+                        </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle w-100" id="topEstudiantesTable">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Estudiante</th>
-                                            <th>Grupo</th>
-                                            <th>Equipo</th>
-                                            <th>Calificación</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="topEstudiantesBody"></tbody>
+                                <table class="table table-hover align-middle w-100 responsive" id="topEstudiantesTable">
+                                    <thead class="table-light"></thead>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
@@ -918,7 +1412,7 @@
                         <div class="card-body"> <button class="btn btn-sm btn-danger mb-3" id="descargarReprobadosBtn">
                                 <i class="fas fa-download me-1"></i> Descargar Tabla </button>
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle w-100" id="reprobadosTable">
+                                <table class="table table-hover align-middle w-100 responsive" id="reprobadosTable">
                                     <thead class="table-light">
                                         <tr>
                                             <th>Nombre</th>
@@ -934,11 +1428,25 @@
                 </div>
 
                 <div id="analisisGruposEquipos" class="section-content">
-                    <!-- El h2 ahora usará clases de Tailwind y las variables CSS para el color del texto y borde -->
-                    <h2 class="text-2xl font-bold text-dark-text-primary mb-4 pt-3 pb-2 border-b border-dark-border">
+                    <h2
+                        class="text-2xl font-bold text-dark-text-primary dark:text-dark-text-primary mb-4 pt-3 pb-2 border-b border-dark-border dark:border-dark-border">
                         Análisis Detallado por Estudiante</h2>
+                    <div class="mb-6">
+                        <div class="relative max-w-md flex items-center">
+                            <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                                <i class="fas fa-search text-gray-400 dark:text-dark-text-secondary"></i>
+                            </div>
+                            <input type="text" id="estudianteSearch"
+                                class="bg-white border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5 dark:text-black"
+                                placeholder="Buscar estudiante por nombre o ID...">
+                            <button id="clearSearch"
+                                class="absolute right-2.5 text-gray-400 hover:text-gray-600 dark:text-dark-text-secondary dark:hover:text-dark-text-primary focus:outline-none"
+                                style="display: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
                     <div id="estudiantesCardsContainer" class="space-y-8">
-                        <!-- Las tarjetas se generan aquí -->
                     </div>
                 </div>
 
@@ -1135,59 +1643,72 @@
     </div>
 
     <template id="estudianteCardTemplate">
-        <!-- Clases de Tailwind actualizadas para usar la nueva paleta -->
         <div
             class="estudiante-card-wrapper bg-dark-bg-card rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl border border-dark-border">
             <div class="p-5">
                 <div class="flex items-start mb-4">
                     <div class="flex flex-col items-center mr-3">
-                        <div class="w-12 h-12 rounded-full bg-brand-purple/30 text-brand-purple flex items-center justify-center text-xl font-semibold estudiante-iniciales shrink-0 mb-1">
+                        <div
+                            class="w-12 h-12 rounded-full bg-brand-purple/30 text-brand-purple flex items-center justify-center text-xl font-semibold estudiante-iniciales shrink-0 mb-1">
                             AB
                         </div>
                         <div class="estudiante-estado-badge text-xs font-medium mt-1">
-                            <!-- Badge se genera por JS con estilos inline -->
                         </div>
                     </div>
                     <div class="flex-grow">
-                        <h4 class="text-lg font-semibold text-dark-text-primary estudiante-nombre leading-tight">Nombre
-                            del Estudiante</h4>
-n                        <p class="text-xs text-dark-text-secondary estudiante-nick">@nick</p>
+                        <div class="flex justify-between items-start">
+                            <h4
+                                class="text-lg font-semibold text-dark-text-primary dark:text-dark-text-primary estudiante-nombre leading-tight">
+                                Nombre
+                                del Estudiante</h4>
+                            <span
+                                class="text-xs bg-dark-border/20 text-dark-text-secondary dark:text-dark-text-secondary px-2 py-0.5 rounded estudiante-id">ID</span>
+                        </div>
+                        <p class="text-xs text-dark-text-secondary dark:text-dark-text-secondary estudiante-nick">@nick
+                        </p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-4">
                     <div>
-                        <span class="font-medium text-dark-text-secondary">Grupo:</span>
-                        <span class="text-dark-text-primary estudiante-grupo ml-1">Grupo X</span>
+                        <span class="font-medium text-dark-text-secondary dark:text-dark-text-secondary">Grupo:</span>
+                        <span class="text-dark-text-primary dark:text-dark-text-primary estudiante-grupo ml-1">Grupo
+                            X</span>
                     </div>
                     <div>
-                        <span class="font-medium text-dark-text-secondary">Equipo:</span>
-                        <span class="text-dark-text-primary estudiante-equipo ml-1">Equipo Y</span>
+                        <span class="font-medium text-dark-text-secondary dark:text-dark-text-secondary">Equipo:</span>
+                        <span class="text-dark-text-primary dark:text-dark-text-primary estudiante-equipo ml-1">Equipo
+                            Y</span>
                     </div>
                     <div>
-                        <span class="font-medium text-dark-text-secondary">Asistencia:</span>
-                        <span class="text-dark-text-primary estudiante-asistencia ml-1">100%</span>
+                        <span
+                            class="font-medium text-dark-text-secondary dark:text-dark-text-secondary">Asistencia:</span>
+                        <span
+                            class="text-dark-text-primary dark:text-dark-text-primary estudiante-asistencia ml-1">100%</span>
                     </div>
                     <div>
-                        <span class="font-medium text-dark-text-secondary">Puntos Ex.:</span>
-                        <span class="text-dark-text-primary estudiante-puntoex ml-1">0</span>
+                        <span class="font-medium text-dark-text-secondary dark:text-dark-text-secondary">Puntos
+                            Ex.:</span>
+                        <span
+                            class="text-dark-text-primary dark:text-dark-text-primary estudiante-puntoex ml-1">0</span>
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <div class="flex justify-between text-sm mb-1">
-                        <span class="font-medium text-dark-text-secondary">Calificación Final:</span>
-                        <span class="font-semibold text-dark-text-primary estudiante-calificacion-final">0.0</span>
+                        <span class="font-medium text-dark-text-secondary dark:text-dark-text-secondary">Calificación
+                            Final:</span>
+                        <span
+                            class="font-semibold text-dark-text-primary dark:text-dark-text-primary estudiante-calificacion-final">0.0</span>
                     </div>
                     <div class="w-full bg-dark-border/30 rounded-full h-2.5">
-                        <!-- Fondo de barra de progreso más sutil -->
                         <div class="h-2.5 rounded-full estudiante-calificacion-barra" style="width: 0%"></div>
-                        <!-- Color de barra por JS -->
                     </div>
                 </div>
 
                 <div>
-                    <p class="text-xs text-dark-text-secondary mb-1">Rendimiento Detallado (0-10):</p>
+                    <p class="text-xs text-dark-text-secondary dark:text-dark-text-secondary mb-1">Rendimiento Detallado
+                        (0-10):</p>
                     <div class="mini-chart-container h-40 sm:h-32 relative">
                         <canvas class="estudiante-mini-chart"></canvas>
                     </div>
@@ -1195,11 +1716,25 @@ n                        <p class="text-xs text-dark-text-secondary estudiante-n
             </div>
         </div>
     </template>
-
+    
+    <script>
+        // Script para llenar los pesos en la explicación
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof PESOS !== 'undefined') { // PESOS se define en app.js
+                document.getElementById('pesoPromedioFinal').textContent = (PESOS.PROMEDIO_FINAL * 100).toFixed(0);
+                document.getElementById('pesoEntregas').textContent = (PESOS.ENTREGAS * 100).toFixed(0);
+                document.getElementById('pesoProyecto').textContent = (PESOS.PROYECTO * 100).toFixed(0);
+                document.getElementById('pesoBitacora').textContent = (PESOS.BITACORA * 100).toFixed(0);
+                document.getElementById('pesoAsistencia').textContent = (PESOS.ASISTENCIA * 100).toFixed(0);
+            }
+        });
+    </script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="app.js"></script>
 </body>

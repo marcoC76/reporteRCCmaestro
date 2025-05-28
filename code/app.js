@@ -41,6 +41,11 @@ let estudianteCardCharts = {};
 let dataTable, topEstudiantesDataTable, reprobadosDataTable;
 
 let estudiantes = [];
+// Variables globales para almacenar los datos de cada parcial
+let datosP1 = [];
+let datosP2 = [];
+let datosP3 = [];
+let allDataLoaded = false;
 let tipoGraficaActividades = 'barras';
 let gruposPromedioChart;
 
@@ -127,6 +132,38 @@ function getChartColors(isDark, onCard = false) {
 }
 
 
+// Function to load all three parcials data at startup
+function cargarTodosLosParciales() {
+    const urls = Object.values(APIS_PARCIALES);
+    const promises = urls.map((url, index) => {
+        return $.ajax({
+            url: url,
+            type: 'GET',
+            dataType: 'json'
+        }).then(data => {
+            console.log(`Datos cargados para Parcial ${index + 1}`);
+            return data;
+        }).catch(error => {
+            console.error(`Error al cargar datos del Parcial ${index + 1}:`, error);
+            return [];
+        });
+    });
+    
+    return Promise.all(promises)
+        .then(responses => {
+            datosP1 = responses[0];
+            datosP2 = responses[1];
+            datosP3 = responses[2];
+            allDataLoaded = true;
+            console.log('Todos los datos de parciales han sido cargados');
+            return true;
+        })
+        .catch(error => {
+            console.error('Error al cargar todos los parciales:', error);
+            return false;
+        });
+}
+
 $(document).ready(function () {
     // Show loading on page load
     showLoading();
@@ -136,7 +173,11 @@ $(document).ready(function () {
     initializeChartDefaults();
 
     parcialActual = parseInt($('#parcialFilter').val()) || 1;
-    cargarDatosDelParcialSeleccionado();
+    
+    // Cargar todos los parciales al inicio
+    cargarTodosLosParciales().then(() => {
+        cargarDatosDelParcialSeleccionado();
+    });
 
 
     function debugStudentData(students) {
@@ -195,6 +236,44 @@ function cargarDatosDelParcialSeleccionado() {
         $('#grupoFilter, #equipoFilter, #estadoFilter').val(''); 
         $('#mobileGrupoFilter, #mobileEquipoFilter, #mobileEstadoFilter').val('');
 
+        // Si los datos ya están cargados, usarlos directamente
+        if (allDataLoaded) {
+            let data;
+            switch(parcialActual) {
+                case 1:
+                    data = datosP1;
+                    break;
+                case 2:
+                    data = datosP2;
+                    break;
+                case 3:
+                    data = datosP3;
+                    break;
+                default:
+                    data = [];
+            }
+            
+            if (data && data.length > 0) {
+                estudiantes = data;
+                console.log(`Usando datos precargados para Parcial ${parcialActual}:`);
+                debugStudentData(estudiantes);
+
+                actualizarFiltros(estudiantes);
+
+                const activeSectionId = $('.sidebar .nav-link.active').data('section') || 'visionGeneral';
+                const isDark = document.documentElement.classList.contains('dark');
+                const sectionIsCardHeavy = ['visionGeneral', 'rendimientoActividades', 'analisisGruposEquipos', 'topEstudiantes'].includes(activeSectionId);
+                const colorsForSection = getChartColors(isDark, sectionIsCardHeavy);
+                
+                handleSectionChange(activeSectionId, estudiantes, colorsForSection);
+
+                // Hide loading state
+                hideLoading();
+                return;
+            }
+        }
+
+        // Si los datos no están cargados o están vacíos, cargarlos mediante AJAX
         const apiUrl = getApiUrlActual();
 
         $.ajax({
@@ -203,6 +282,19 @@ function cargarDatosDelParcialSeleccionado() {
             dataType: 'json',
             success: function (data) {
                 estudiantes = data;
+
+                // Guardar los datos en la variable global correspondiente
+                switch(parcialActual) {
+                    case 1:
+                        datosP1 = data;
+                        break;
+                    case 2:
+                        datosP2 = data;
+                        break;
+                    case 3:
+                        datosP3 = data;
+                        break;
+                }
 
                 console.log(`Datos cargados para Parcial ${parcialActual}:`);
                 debugStudentData(estudiantes);
@@ -225,8 +317,8 @@ function cargarDatosDelParcialSeleccionado() {
                 $('.loading-content p').text('Error al cargar los datos. Intente de nuevo.');
                 // Keep overlay visible but hide skeletons
                 $('.skeleton-container').removeClass('active');
-                 estudiantes = []; 
-                 handleSectionChange($('.sidebar .nav-link.active').data('section') || 'visionGeneral', estudiantes, getChartColors(document.documentElement.classList.contains('dark'), false));
+                estudiantes = []; 
+                handleSectionChange($('.sidebar .nav-link.active').data('section') || 'visionGeneral', estudiantes, getChartColors(document.documentElement.classList.contains('dark'), false));
             }
         });
     }
